@@ -239,4 +239,5 @@ smc91x-$(CONFIG_SMC91X)			:= gpmc-smc91x.o
 obj-y					+= $(smc91x-m) $(smc91x-y)
 obj-$(CONFIG_ARCH_OMAP4)		+= hwspinlocks.o
 obj-$(CONFIG_OMAP_HSI_DEVICE)           += omap_hsi.o
-obj-$(CONFIG_WIFI_CONTROL_FUNC)         += wl127x_wifi.o
+obj-$(CONFIG_WIFI_CONTROL_FUNC) += wl127x_wifi.o
+obj-$(CONFIG_ION_OMAP)      += omap_ion.o
