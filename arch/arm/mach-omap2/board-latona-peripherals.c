@@ -56,6 +56,8 @@
 #include <linux/spi/spi.h>
 #include <plat/mcspi.h>
 
+#include <plat/onenand.h>
+
 #define ZEUS_CAM
 #ifdef ZEUS_CAM
 /* include files for cam pmic (power) and cam sensor */
@@ -246,6 +248,35 @@ static struct platform_device modemctl = {
 	.dev = {
 		.platform_data = &mdmctl_data,
 	},
+};
+
+static struct mtd_partition onenand_partitions[] = {
+        {
+                .name = "kernel",
+                .offset = 0x1480000,
+                .size = 0x800000,
+        },
+        {
+                .name = "recovery",
+                .offset = MTDPART_OFS_APPEND,
+                .size = 0x800000,
+        },
+        {
+                .name = "system",
+                .offset = MTDPART_OFS_APPEND,
+                .size = 0x14D80000,
+        },
+        {
+                .name = "dbdata",
+                .offset = MTDPART_OFS_APPEND,
+                .size = 0x4E00000,
+        },
+        {
+                .name = "cache",
+                .offset = MTDPART_OFS_APPEND,
+                .size = 0x2300000,
+        },
+
 };
 
 static void modemctl_cfg_gpio( void )
@@ -1089,6 +1120,19 @@ if ((up2->pdev->id == BLUETOOTH_UART)
 wake_lock_timeout(&uart_lock, 2*HZ);
 }
 
+static struct omap_onenand_platform_data board_onenand_data = {
+	.cs		= 0,
+	.gpio_irq	= 65,
+	.parts		= onenand_partitions,
+	.nr_parts	= ARRAY_SIZE(onenand_partitions),
+	.flags		= ONENAND_SYNC_READWRITE,
+};
+
+static void __init board_onenand_init(void)
+{
+	gpmc_onenand_init(&board_onenand_data);
+}
+
 static struct omap_uart_port_info omap_serial_platform_data[] = {
 	 {
                 .use_dma        = 0,
@@ -1144,6 +1188,8 @@ void __init omap_board_peripherals_init(void)
 	printk("*******board_peripherals_init*****\n");
 	wake_lock_init(&uart_lock, WAKE_LOCK_SUSPEND, "uart_wake_lock");
 	twl4030_get_scripts(&latona_t2scripts_data);
+
+       board_onenand_init();
 
 	omap_i2c_init();
 
