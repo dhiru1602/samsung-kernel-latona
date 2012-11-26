@@ -249,33 +249,119 @@ static struct platform_device modemctl = {
 		.platform_data = &mdmctl_data,
 	},
 };
-
+/*
+==== PARTITION INFORMATION ====
+ ID         : IBL+PBL (0x0)
+ ATTR       : RO SLC (0x1002)
+ FIRST_UNIT : 0
+ NO_UNITS   : 1
+===============================
+ ID         : PIT (0x1)
+ ATTR       : RO SLC (0x1002)
+ FIRST_UNIT : 1
+ NO_UNITS   : 1
+===============================
+ ID         : EFS (0x14)
+ ATTR       : RW STL SLC (0x1101)
+ FIRST_UNIT : 2
+ NO_UNITS   : 40
+===============================
+ ID         : SBL (0x3)
+ ATTR       : RO SLC (0x1002)
+ FIRST_UNIT : 42
+ NO_UNITS   : 5
+===============================
+ ID         : SBL2 (0x4)
+ ATTR       : RO SLC (0x1002)
+ FIRST_UNIT : 47
+ NO_UNITS   : 5
+===============================
+ ID         : PARAM (0x15)
+ ATTR       : RW STL SLC (0x1101)
+ FIRST_UNIT : 52
+ NO_UNITS   : 30
+===============================
+ ID         : NORMALBOOT (0x5)
+ ATTR       : RO SLC (0x1002)
+ FIRST_UNIT : 82
+ NO_UNITS   : 32
+===============================
+ ID         : RECOVERY (0x8)
+ ATTR       : RO SLC (0x1002)
+ FIRST_UNIT : 114
+ NO_UNITS   : 32
+===============================
+ ID         : SYSTEM (0x16)
+ ATTR       : RW STL SLC (0x1101)
+ FIRST_UNIT : 146
+ NO_UNITS   : 1334
+===============================
+ ID         : USERDATA (0x17)
+ ATTR       : RW STL SLC (0x1101)
+ FIRST_UNIT : 1480
+ NO_UNITS   : 312
+===============================
+ ID         : CACHE (0x18)
+ ATTR       : RW STL SLC (0x1101)
+ FIRST_UNIT : 1792
+ NO_UNITS   : 140
+===============================
+ ID         : FOTA (0x9)
+ ATTR       : RO SLC (0x1002)
+ FIRST_UNIT : 1932
+ NO_UNITS   : 2
+===============================
+ ID         : MODEM (0xa)
+ ATTR       : RO SLC (0x1002)
+ FIRST_UNIT : 1934
+ NO_UNITS   : 70
+===============================
+*/
 static struct mtd_partition onenand_partitions[] = {
         {
-                .name = "kernel",
-                .offset = 0x1480000,
-                .size = 0x800000,
-        },
-        {
-                .name = "recovery",
-                .offset = MTDPART_OFS_APPEND,
-                .size = 0x800000,
-        },
-        {
-                .name = "system",
-                .offset = MTDPART_OFS_APPEND,
-                .size = 0x14D80000,
-        },
-        {
-                .name = "dbdata",
-                .offset = MTDPART_OFS_APPEND,
-                .size = 0x4E00000,
-        },
-        {
-                .name = "cache",
-                .offset = MTDPART_OFS_APPEND,
-                .size = 0x2300000,
-        },
+		.name		= "boot",
+		.offset	= (82*SZ_256K),
+		.size		= (32*SZ_256K), //113
+	},
+	{
+		.name		= "recovery",
+		.offset	= (114*SZ_256K),
+		.size		= (32*SZ_256K), //145
+	},
+	{
+		.name		= "datadata",
+		.offset	=  (146*SZ_256K),
+		.size		= (1688*SZ_256K), //1833
+	},
+	{
+		.name		= "cache",
+		.offset  	= (1834*SZ_256K),
+		.size		= (70*SZ_256K), //1903
+	},
+	{       /* we should consider moving this before the modem at the end
+	           that would allow us to change the partitions before without
+	           loosing ths sensible data*/
+		.name		= "efs",
+		.offset	= (1904*SZ_256K),
+		.size		= (50*SZ_256K), //1953
+	},
+	{       /* the modem firmware has to be mtd5 as the userspace samsung ril uses
+	           this device hardcoded, but I placed it at the end of the NAND to be
+	           able to change the other partition layout without moving it */
+		.name		= "radio",
+		.offset	= (1954*SZ_256K),
+		.size		= (64*SZ_256K), //2017
+	},
+	{       /* The reservoir area is used by Samsung's Block Management Layer (BML)
+	           to map good blocks from this reservoir to bad blocks in user
+	           partitions. A special tool (bml_over_mtd) is needed to write
+	           partition images using bad block mapping.
+	           Currently, this is required for flashing the "boot" partition,
+	           as Samsung's stock bootloader expects BML partitions.*/
+		.name		= "reservoir",
+		.offset	= (2018*SZ_256K),
+		.size	       = (30*SZ_256K), //2047
+	},
 
 };
 
@@ -1122,7 +1208,7 @@ wake_lock_timeout(&uart_lock, 2*HZ);
 
 static struct omap_onenand_platform_data board_onenand_data = {
 	.cs		= 0,
-	.gpio_irq	= 65,
+	.gpio_irq	= 73,
 	.parts		= onenand_partitions,
 	.nr_parts	= ARRAY_SIZE(onenand_partitions),
 	.flags		= ONENAND_SYNC_READWRITE,
